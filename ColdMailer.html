@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColdMailer</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.18/mammoth.browser.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            transition: all 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        .file-input {
+            border: 2px dashed #e1e5e9;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .file-input:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .file-status {
+            margin-top: 5px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .file-status.success {
+            background: rgba(0, 184, 148, 0.1);
+            color: #00b894;
+            border: 1px solid rgba(0, 184, 148, 0.2);
+        }
+
+        .file-status.error {
+            background: rgba(232, 67, 147, 0.1);
+            color: #e84393;
+            border: 1px solid rgba(232, 67, 147, 0.2);
+        }
+
+        .file-status.processing {
+            background: rgba(255, 193, 7, 0.1);
+            color: #856404;
+            border: 1px solid rgba(255, 193, 7, 0.2);
+        }
+
+        .conditional-section {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .conditional-section.show {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .platform-options {
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 12px;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .status.processing {
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            color: #2d3436;
+            border: 2px solid #fdcb6e;
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, #55efc4, #00b894);
+            color: #2d3436;
+            border: 2px solid #00b894;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: white;
+            border: 2px solid #e84393;
+        }
+
+        .response-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            border: 2px solid #e1e5e9;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .debug-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 ColdMailer</h1>
+        
+        <form id="agentForm">
+            <div class="form-group">
+                <label for="user_input">What would you want me to do?</label>
+                <select id="user_input" name="user_input" required>
+                    <option value="">Select an option...</option>
+                    <option value="VC/potential investor">VC/potential investor</option>
+                    <option value="For a referral">For a referral</option>
+                    <option value="Potential clients">Potential clients</option>
+                    <option value="Cover letter">Cover letter</option>
+                </select>
+            </div>
+            
+            <!-- VC/Potential Investor Section -->
+            <div id="vc-section" class="conditional-section" style="display: none;">
+                <div class="form-group">
+                    <label for="pitch_deck">Upload your pitch deck/quarterly reports:</label>
+                    <input type="file" id="pitch_deck" name="pitch_deck" accept=".pdf,.txt,.doc,.docx" class="file-input">
+                    <div id="pitch_deck_status" class="file-status" style="display: none;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="vc_name">VC/Investor Name:</label>
+                    <input type="text" id="vc_name" name="vc_name" placeholder="Enter VC/Investor name">
+                </div>
+            </div>
+            
+            <!-- For a Referral Section -->
+            <div id="referral-section" class="conditional-section" style="display: none;">
+                <div class="form-group">
+                    <label for="assistant_files_referral">Upload your resume:</label>
+                    <input type="file" id="assistant_files_referral" name="assistant_files_referral" accept=".pdf,.txt,.doc,.docx" class="file-input">
+                    <div id="assistant_files_referral_status" class="file-status" style="display: none;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ref_name">What is the name of the person you are asking for referral?</label>
+                    <input type="text" id="ref_name" name="ref_name" placeholder="Enter person's name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="details_job">What is the job title you are aiming for?</label>
+                    <input type="text" id="details_job" name="details_job" placeholder="Enter job title">
+                </div>
+            </div>
+            
+            <!-- Potential Clients Section -->
+            <div id="clients-section" class="conditional-section" style="display: none;">
+                <div class="form-group">
+                    <label for="platform_input">Platform:</label>
+                    <select id="platform_input" name="platform_input">
+                        <option value="">Select platform...</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Instagram">Instagram</option>
+                    </select>
+                </div>
+                
+                <!-- LinkedIn Options -->
+                <div id="linkedin-options" class="platform-options" style="display: none;">
+                    <div class="form-group">
+                        <label for="client_name">What client are you targeting?</label>
+                        <input type="text" id="client_name" name="client_name" placeholder="Enter client name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="product">Product Details:</label>
+                        <input type="file" id="product" name="product" accept=".pdf,.txt,.doc,.docx" class="file-input">
+                        <div id="product_status" class="file-status" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Instagram Options -->
+                <div id="instagram-options" class="platform-options" style="display: none;">
+                    <div class="form-group">
+                        <label for="client_insta">What client are you targeting?</label>
+                        <input type="text" id="client_insta" name="client_insta" placeholder="Enter client name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="insta_product">Product Details:</label>
+                        <input type="file" id="insta_product" name="insta_product" accept=".pdf,.txt,.doc,.docx" class="file-input">
+                        <div id="insta_product_status" class="file-status" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cover Letter Section -->
+            <div id="cover-letter-section" class="conditional-section" style="display: none;">
+                <div class="form-group">
+                    <label for="webpage">Paste the link:</label>
+                    <input type="url" id="webpage" name="webpage" placeholder="https://example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="resume1">Upload your resume:</label>
+                    <input type="file" id="resume1" name="resume1" accept=".pdf,.txt,.doc,.docx" class="file-input">
+                    <div id="resume1_status" class="file-status" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn" id="submitBtn">
+                <span id="btnText">🚀 Process Request</span>
+            </button>
+        </form>
+        
+        <div id="statusContainer"></div>
+        <div id="responseContainer"></div>
+        <div id="debugContainer"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://api.agent.ai/v1/agent/yeza3xgkuzbco783/webhook/071c0945';
+        let currentRunId = null;
+        let pollInterval = null;
+        let processedFiles = new Map();
+
+        // Initialize PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+
+        // Handle dropdown changes
+        document.getElementById('user_input').addEventListener('change', function() {
+            const selectedValue = this.value;
+            hideAllSections();
+            
+            switch(selectedValue) {
+                case 'VC/potential investor':
+                    showSection('vc-section');
+                    break;
+                case 'For a referral':
+                    showSection('referral-section');
+                    break;
+                case 'Potential clients':
+                    showSection('clients-section');
+                    break;
+                case 'Cover letter':
+                    showSection('cover-letter-section');
+                    break;
+            }
+        });
+
+        // Handle platform selection for potential clients
+        document.getElementById('platform_input').addEventListener('change', function() {
+            const selectedPlatform = this.value;
+            document.getElementById('linkedin-options').style.display = 'none';
+            document.getElementById('instagram-options').style.display = 'none';
+            
+            if (selectedPlatform === 'LinkedIn') {
+                document.getElementById('linkedin-options').style.display = 'block';
+            } else if (selectedPlatform === 'Instagram') {
+                document.getElementById('instagram-options').style.display = 'block';
+            }
+        });
+
+        // Add file processing listeners
+        ['pitch_deck', 'assistant_files_referral', 'product', 'insta_product', 'resume1'].forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('change', function(e) {
+                    handleFileSelection(e.target, inputId);
+                });
+            }
+        });
+
+        function hideAllSections() {
+            const sections = document.querySelectorAll('.conditional-section');
+            sections.forEach(section => {
+                section.style.display = 'none';
+                section.classList.remove('show');
+            });
+        }
+
+        function showSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            section.style.display = 'block';
+            section.classList.add('show');
+        }
+
+        // Enhanced file processing - convert to plain text string
+        async function handleFileSelection(input, inputId) {
+            const file = input.files[0];
+            const statusElement = document.getElementById(`${inputId}_status`);
+            
+            if (!file) {
+                statusElement.style.display = 'none';
+                processedFiles.delete(inputId);
+                return;
+            }
+
+            // Validate file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                showFileStatus(statusElement, 'error', 'File too large (max 10MB)');
+                input.value = '';
+                processedFiles.delete(inputId);
+                return;
+            }
+
+            // Show processing status
+            showFileStatus(statusElement, 'processing', 'Processing file...');
+
+            try {
+                let textContent = '';
+                
+                // Process different file types
+                if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+                    // For plain text files
+                    textContent = await fileToText(file);
+                } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    // For PDF files
+                    textContent = await extractPDFText(file);
+                } else if (file.type.includes('document') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+                    // For Word documents
+                    textContent = await extractDocxText(file);
+                } else {
+                    // For other files, try to read as text
+                    textContent = await fileToText(file);
+                }
+                
+                // Store processed data as plain text
+                processedFiles.set(inputId, {
+                    originalFile: file,
+                    content: textContent,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type
+                });
+
+                showFileStatus(statusElement, 'success', 
+                    `✓ ${file.name} processed (${(file.size / 1024).toFixed(1)}KB, ${textContent.length} chars)`);
+
+            } catch (error) {
+                console.error('Error processing file:', error);
+                showFileStatus(statusElement, 'error', 'Error processing file: ' + error.message);
+                input.value = '';
+                processedFiles.delete(inputId);
+            }
+        }
+
+        function showFileStatus(statusElement, type, message) {
+            statusElement.style.display = 'block';
+            statusElement.className = `file-status ${type}`;
+            statusElement.textContent = message;
+        }
+
+        // Convert file to plain text
+        function fileToText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    resolve(reader.result);
+                };
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // Extract text from PDF files using pdf.js
+        async function extractPDFText(file) {
+            const url = URL.createObjectURL(file);
+            const loadingTask = pdfjsLib.getDocument(url);
+            const pdf = await loadingTask.promise;
+            
+            let textContent = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const text = await page.getTextContent();
+                textContent += text.items.map(item => item.str).join(' ') + '\n';
+            }
+            
+            URL.revokeObjectURL(url);
+            return textContent;
+        }
+
+        // Extract text from DOCX files using mammoth
+        async function extractDocxText(file) {
+            const arrayBuffer = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            
+            // Convert HTML to plain text
+            const div = document.createElement('div');
+            div.innerHTML = result.value;
+            return div.textContent || div.innerText || "";
+        }
+
+        // Enhanced form submission with PLAIN TEXT file content
+        document.getElementById('agentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const selectedOption = document.getElementById('user_input').value;
+            
+            // Create a flat object with all fields
+            const formData = {};
+            
+            // Always include the main selection
+            formData.user_input = selectedOption;
+            
+            try {
+                // To ensure the agent receives all expected variables, we initialize them to an empty string.
+                // This prevents potential errors if the agent expects a variable to be defined.
+                formData.vc_name = "";
+                formData.pitch_deck = "";
+                formData.ref_name = "";
+                formData.details_job = "";
+                formData.assistant_files_referral = "";
+                formData.platform_input = "";
+                formData.client_name = "";
+                formData.product = "";
+                formData.client_insta = "";
+                formData.insta_product = "";
+                formData.webpage = "";
+                formData.resume1 = "";
+
+                // VC/Potential Investor fields
+                if (selectedOption === 'VC/potential investor') {
+                    formData.vc_name = document.getElementById('vc_name').value || "";
+                    if (processedFiles.has('pitch_deck')) {
+                        // FIX: Pass the entire file object
+                        formData.pitch_deck = processedFiles.get('pitch_deck');
+                    }
+                }
+                
+                // Referral fields
+                if (selectedOption === 'For a referral') {
+                    formData.ref_name = document.getElementById('ref_name').value || "";
+                    formData.details_job = document.getElementById('details_job').value || "";
+                    if (processedFiles.has('assistant_files_referral')) {
+                        // FIX: Pass the entire file object
+                        formData.assistant_files_referral = processedFiles.get('assistant_files_referral');
+                    }
+                }
+                
+                // Potential clients fields
+                if (selectedOption === 'Potential clients') {
+                    const platform = document.getElementById('platform_input').value || "";
+                    formData.platform_input = platform;
+                    
+                    if (platform === 'LinkedIn') {
+                        formData.client_name = document.getElementById('client_name').value || "";
+                        if (processedFiles.has('product')) {
+                             // FIX: Pass the entire file object
+                            formData.product = processedFiles.get('product');
+                        }
+                    } else if (platform === 'Instagram') {
+                        formData.client_insta = document.getElementById('client_insta').value || "";
+                        if (processedFiles.has('insta_product')) {
+                            // FIX: Pass the entire file object
+                            formData.insta_product = processedFiles.get('insta_product');
+                        }
+                    }
+                }
+                
+                // Cover letter fields
+                if (selectedOption === 'Cover letter') {
+                    formData.webpage = document.getElementById('webpage').value || "";
+                    if (processedFiles.has('resume1')) {
+                        // FIX: Pass the entire file object
+                        formData.resume1 = processedFiles.get('resume1');
+                    }
+                }
+                
+                await submitRequest(formData);
+                
+            } catch (error) {
+                console.error('Error processing form:', error);
+                document.getElementById('statusContainer').innerHTML = `
+                    <div class="status error">
+                        ❌ Error processing form: ${error.message}
+                    </div>
+                `;
+            }
+        });
+
+        async function submitRequest(data) {
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const statusContainer = document.getElementById('statusContainer');
+            const responseContainer = document.getElementById('responseContainer');
+            
+            // Reset UI
+            statusContainer.innerHTML = '';
+            responseContainer.innerHTML = '';
+            
+            // Update button state
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span>Submitting...';
+            
+            try {
+                console.log('Submitting data:', data);
+                
+                // FIX: The problematic 'cleanData' block has been removed.
+                // We pass the 'data' object directly to JSON.stringify,
+                // which correctly handles nested objects (our file data).
+                
+                // Submit the request
+                const response = await fetch(`${API_BASE}/async`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API Error Response:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+                
+                const result = await response.json();
+                console.log('API Response:', result);
+                
+                if (!result.run_id) {
+                    throw new Error('No run_id received from API');
+                }
+                
+                currentRunId = result.run_id;
+                
+                // Update UI
+                statusContainer.innerHTML = `
+                    <div class="status processing pulse">
+                        <div class="loading"></div>
+                        Processing request... Run ID: ${currentRunId}
+                    </div>
+                `;
+                
+                btnText.innerHTML = '<span class="loading"></span>Processing...';
+                
+                // Start polling for results
+                startPolling();
+                
+            } catch (error) {
+                console.error('Error submitting request:', error);
+                statusContainer.innerHTML = `
+                    <div class="status error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+                
+                // Reset button
+                submitBtn.disabled = false;
+                btnText.innerHTML = '🚀 Process Request';
+            }
+        }
+
+        function startPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+            
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/status/${currentRunId}`);
+                    console.log('Status check response:', response.status);
+                    
+                    if (response.status === 200) {
+                        const result = await response.json();
+                        console.log('Status result:', result);
+                        
+                        // Success - stop polling
+                        clearInterval(pollInterval);
+                        
+                        document.getElementById('statusContainer').innerHTML = `
+                            <div class="status success">
+                                ✅ Request completed successfully!
+                            </div>
+                        `;
+                        
+                        document.getElementById('responseContainer').innerHTML = `
+                            <div class="response-container">
+                                <strong>Response:</strong><br><br>${result.response || 'No response content'}
+                            </div>
+                        `;
+                        
+                        // Reset button
+                        const submitBtn = document.getElementById('submitBtn');
+                        const btnText = document.getElementById('btnText');
+                        submitBtn.disabled = false;
+                        btnText.innerHTML = '🚀 Process Request';
+                        
+                    } else if (response.status === 204) {
+                        // Still processing - continue polling
+                        console.log('Still processing...');
+                        
+                    } else {
+                        // Error or other status
+                        const errorText = await response.text();
+                        console.error('Status check error:', errorText);
+                        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error checking status:', error);
+                    clearInterval(pollInterval);
+                    
+                    document.getElementById('statusContainer').innerHTML = `
+                        <div class="status error">
+                            ❌ Error checking status: ${error.message}
+                        </div>
+                    `;
+                    
+                    // Reset button
+                    const submitBtn = document.getElementById('submitBtn');
+                    const btnText = document.getElementById('btnText');
+                    submitBtn.disabled = false;
+                    btnText.innerHTML = '🚀 Process Request';
+                }
+            }, 10000); // Poll every 3 seconds
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+        });
+    </script>
+</body>
+</html>
